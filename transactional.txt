@@ -140,7 +140,7 @@ Ma’nosi:
  Ikalasi ham o‘qiydi:
  100$
  Natija:
- -50$ (overspending)
+ -10$ (overspending)
 
  Isolation bilan:
  T1 commit bo‘ladi
