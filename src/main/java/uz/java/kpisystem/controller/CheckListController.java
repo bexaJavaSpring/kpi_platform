@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/checklists")
 @RequiredArgsConstructor
-public class ChecklistController {
+public class CheckListController {
     private final ICheckListService service;
 
 

@@ -7,65 +7,74 @@ import uz.java.kpisystem.dto.checkList.CheckListFilter;
 import uz.java.kpisystem.dto.checkList.CheckListRequest;
 import uz.java.kpisystem.dto.checkList.CheckListResponse;
 import uz.java.kpisystem.entity.CheckList;
+import uz.java.kpisystem.entity.CheckListItem;
 import uz.java.kpisystem.exception.CustomNotFoundException;
 import uz.java.kpisystem.mapper.CheckListMapper;
+import uz.java.kpisystem.repository.CheckListItemRepository;
 import uz.java.kpisystem.repository.CheckListRepository;
 import uz.java.kpisystem.specifications.CheckListSpecification;
 import uz.java.kpisystem.specifications.SearchSpecification;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class CheckListService implements ICheckListService {
+
     private final CheckListRepository repository;
+    private final CheckListItemRepository checkListItemRepository;
     private final CheckListMapper mapper;
     private final String msgcode = "checklist.not.found";
 
     @Override
     @Transactional(readOnly = true)
-   public List<CheckListResponse> getAll(CheckListFilter checkListFilter) {
-        CheckListSpecification spec = new CheckListSpecification(checkListFilter);
-        Pageable pagination = SearchSpecification.getPageable(checkListFilter.getPage(), checkListFilter.getLimit(),
-                checkListFilter.getSortBy());
-        return repository.findAll(spec, pagination).stream().map(mapper::toResponse).toList();
-    };
-
-    @Override
-    public Long create(CheckListRequest request) {
-        CheckList checkList = mapper.toEntity(request);
-        CheckList save = this.repository.save(checkList);
-        return save.getId();
-    };
-
-
-    @Override
-    public CheckListResponse update(Long id,CheckListRequest request){
-        Optional<CheckList> opt = repository.findById(id);
-        if (!opt.isPresent())
-            throw new CustomNotFoundException(msgcode);
-        CheckList checkList = opt.get();
-        mapper.updateFromRequest(request, checkList);
-        repository.save(checkList);
-        return getOne(id);
-    };
-
-    @Override
-    public CheckListResponse getOne(Long id) {
-        Optional<CheckList> opt = repository.findById(id);
-        if (!opt.isPresent())
-            throw new CustomNotFoundException(msgcode);
-        CheckList checkList = opt.get();
-        return mapper.toResponse(checkList);
+    public List<CheckListResponse> getAll(CheckListFilter filter) {
+        Pageable pagination = SearchSpecification.getPageable(filter.getPage(), filter.getLimit(), filter.getSortBy());
+        return repository.findAll(new CheckListSpecification(filter), pagination)
+                .stream().map(mapper::toResponse).toList();
     }
 
     @Override
-    public Boolean delete(Long id){
-        CheckList checkList = repository.findById(id).orElseThrow(() -> new CustomNotFoundException(msgcode));
+    @Transactional
+    public Long create(CheckListRequest request) {
+        CheckList checkList = mapper.toEntity(request);
+        if (request.getCheckListItems() != null && !request.getCheckListItems().isEmpty()) {
+            Set<CheckListItem> items = new HashSet<>(checkListItemRepository.findAllById(request.getCheckListItems()));
+            checkList.setItems(items);
+        }
+        return repository.save(checkList).getId();
+    }
+
+    @Override
+    @Transactional
+    public CheckListResponse update(Long id, CheckListRequest request) {
+        CheckList checkList = repository.findById(id)
+                .orElseThrow(() -> new CustomNotFoundException(msgcode));
+        mapper.updateFromRequest(request, checkList);
+        if (request.getCheckListItems() != null) {
+            Set<CheckListItem> items = new HashSet<>(checkListItemRepository.findAllById(request.getCheckListItems()));
+            checkList.setItems(items);
+        }
+        return mapper.toResponse(repository.save(checkList));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CheckListResponse getOne(Long id) {
+        return mapper.toResponse(
+                repository.findById(id).orElseThrow(() -> new CustomNotFoundException(msgcode))
+        );
+    }
+
+    @Override
+    @Transactional
+    public Boolean delete(Long id) {
+        CheckList checkList = repository.findById(id)
+                .orElseThrow(() -> new CustomNotFoundException(msgcode));
         checkList.makeAsDeleted();
         repository.save(checkList);
         return true;
-    };
-
+    }
 }

@@ -10,5 +10,5 @@ import java.util.Set;
 public class CheckListRequest {
     @NotBlank(message = "checkList.name.must.not.be.blank")
     private String name;
-    Set<Long> checkList =  new HashSet<>();
+    Set<Long> checkListItems = new HashSet<>();
 }
