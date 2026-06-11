@@ -42,8 +42,6 @@ public class GroupService implements IGroupService {
 //        group.setName(name);
         Group build = Group.builder().name(name).build();
         Group save = repository.save(build);
-        if (1 == 1)
-            throw new CustomNotFoundException("test uchun @Transactional roll back qilish");
         return save.getId();
     }
 

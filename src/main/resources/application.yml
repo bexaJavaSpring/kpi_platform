@@ -13,7 +13,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/kpi_db
     username: postgres
-    password: bexa
+    password: 12345
   jpa:
     hibernate:
       ddl-auto: update

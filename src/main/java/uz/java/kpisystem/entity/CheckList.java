@@ -16,7 +16,6 @@ import java.util.Set;
 @Setter
 @Table(name = "checklist")
 public class CheckList extends Auditable {
-
     private String name;
 
     @OneToMany(mappedBy = "checkList", fetch = FetchType.LAZY)
