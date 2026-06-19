@@ -1,8 +1,6 @@
 package uz.java.kpisystem.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 import uz.java.kpisystem.dto.checkList.CheckListRequest;
 import uz.java.kpisystem.dto.checkList.CheckListResponse;
 import uz.java.kpisystem.entity.CheckList;

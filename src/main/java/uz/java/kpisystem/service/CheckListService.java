@@ -39,9 +39,15 @@ public class CheckListService implements ICheckListService {
     @Override
     @Transactional
     public Long create(CheckListRequest request) {
+        Set<CheckListItem> items = new HashSet<>();
         CheckList checkList = mapper.toEntity(request);
         if (request.getCheckListItems() != null && !request.getCheckListItems().isEmpty()) {
-            Set<CheckListItem> items = new HashSet<>(checkListItemRepository.findAllById(request.getCheckListItems()));
+            request.getCheckListItems().forEach(id -> {
+                CheckListItem checkListItem = checkListItemRepository.findById(id).orElseThrow(
+                        () -> new CustomNotFoundException(msgcode)
+                );
+                items.add(checkListItem);
+            });
             checkList.setItems(items);
         }
         return repository.save(checkList).getId();
@@ -50,11 +56,17 @@ public class CheckListService implements ICheckListService {
     @Override
     @Transactional
     public CheckListResponse update(Long id, CheckListRequest request) {
+        Set<CheckListItem> items = new HashSet<>();
         CheckList checkList = repository.findById(id)
                 .orElseThrow(() -> new CustomNotFoundException(msgcode));
         mapper.updateFromRequest(request, checkList);
         if (request.getCheckListItems() != null) {
-            Set<CheckListItem> items = new HashSet<>(checkListItemRepository.findAllById(request.getCheckListItems()));
+            request.getCheckListItems().forEach(itemId -> {
+                CheckListItem checkListItem = checkListItemRepository.findById(itemId).orElseThrow(
+                        () -> new CustomNotFoundException(msgcode)
+                );
+                items.add(checkListItem);
+            });
             checkList.setItems(items);
         }
         return mapper.toResponse(repository.save(checkList));
