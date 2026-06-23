@@ -1,11 +1,13 @@
 package uz.java.kpisystem.dto.group;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import uz.java.kpisystem.dto.BaseFilter;
 
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = true)
 public class GroupFilter extends BaseFilter {
     private String name;
     private Integer taskCount;

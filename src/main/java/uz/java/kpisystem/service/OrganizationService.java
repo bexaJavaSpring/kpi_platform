@@ -1,8 +1,10 @@
 package uz.java.kpisystem.service;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.java.kpisystem.dto.ApiResponse;
+import uz.java.kpisystem.dto.group.GroupResponse;
 import uz.java.kpisystem.dto.organization.OrganizationFilter;
 import uz.java.kpisystem.dto.organization.OrganizationInfo;
 import uz.java.kpisystem.dto.organization.OrganizationRequest;
@@ -13,6 +15,9 @@ import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
 import uz.java.kpisystem.mapper.OrganizationMapper;
 import uz.java.kpisystem.repository.OrganizationRepository;
+import uz.java.kpisystem.specifications.GroupSpecification;
+import uz.java.kpisystem.specifications.OrganizationSpecification;
+import uz.java.kpisystem.specifications.SearchSpecification;
 import uz.java.kpisystem.util.CachePrefix;
 
 import java.util.List;
@@ -40,8 +45,10 @@ public class OrganizationService implements IOrganizationService {
         if(data != null) {
             return (ApiResponse<List<OrganizationInfo>>) data;
         }
-        List<Organization> all = repository.findAll();  // Alt+Enter bosilsa ozgaruvchiga olinadi
-        List<OrganizationInfo> response = all.stream().map(mapper::toResponse).toList();
+        OrganizationSpecification spec = new OrganizationSpecification(organizationFilter);
+        Pageable pagination = SearchSpecification.getPageable(organizationFilter.getPage(), organizationFilter.getLimit(),
+                organizationFilter.getSortBy());
+        List<OrganizationInfo> response = repository.findAll(spec, pagination).stream().map(mapper::toResponse).toList();
         ApiResponse<List<OrganizationInfo>> listApiResponse = new ApiResponse<>(response);
         cacheManagerService.put(String.valueOf(organizationFilter.hashCode()), CachePrefix.ORGANIZATIONS, listApiResponse);
         return listApiResponse;
