@@ -1,6 +1,7 @@
 package uz.java.kpisystem.service;
 
 import uz.java.kpisystem.dto.group.GroupFilter;
+import uz.java.kpisystem.dto.group.GroupRequest;
 import uz.java.kpisystem.dto.group.GroupResponse;
 import uz.java.kpisystem.entity.Group;
 
@@ -10,9 +11,9 @@ public interface IGroupService {
 
     List<GroupResponse> getAll(GroupFilter groupFilter);
 
-    Long create(String name);
+    Long create(GroupRequest body);
 
-    Long update(Long id, String name);
+    Long update(Long id,GroupRequest body);
 
     GroupResponse getOne(Long id);
 

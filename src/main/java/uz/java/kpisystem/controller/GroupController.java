@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import uz.java.kpisystem.dto.group.GroupFilter;
+import uz.java.kpisystem.dto.group.GroupRequest;
 import uz.java.kpisystem.dto.group.GroupResponse;
 import uz.java.kpisystem.service.GroupService;
 
@@ -30,13 +31,13 @@ public class GroupController {
 
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public ResponseEntity<?> create(@RequestParam String name) {
-        return ResponseEntity.ok(service.create(name));
+    public ResponseEntity<?> create(@RequestBody GroupRequest body) {
+        return ResponseEntity.ok(service.create(body));
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Long> update(@PathVariable Long id, @RequestParam String name) {
-        return ResponseEntity.ok(service.update(id, name));
+    public ResponseEntity<Long> update(@PathVariable Long id, @RequestBody GroupRequest body) {
+        return ResponseEntity.ok(service.update(id, body));
     }
 
     @GetMapping("/{id}")
