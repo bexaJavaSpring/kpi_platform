@@ -40,9 +40,9 @@ public class GroupService implements IGroupService {
     @Transactional(readOnly = true)
     public ApiResponse<List<GroupResponse>> getAll(GroupFilter groupFilter) {
         Object data = cacheManagerService.get(String.valueOf(groupFilter.hashCode()), CachePrefix.GROUP);
-        if (data != null) {
+        if (data != null)
             return (ApiResponse<List<GroupResponse>>) data;
-        }
+
         GroupSpecification spec = new GroupSpecification(groupFilter);
         Pageable pagination = SearchSpecification.getPageable(groupFilter.getPage(), groupFilter.getLimit(),
                 groupFilter.getSortBy());
