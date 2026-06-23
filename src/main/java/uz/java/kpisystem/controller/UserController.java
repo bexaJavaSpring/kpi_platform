@@ -22,7 +22,7 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ORGANIZATION_ADMIN')")
+//    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'ORGANIZATION_ADMIN')")
     public ResponseEntity<Long>createUser(@RequestBody @Valid UserRequest request) {
         return ResponseEntity.ok(userService.create(request));
     }

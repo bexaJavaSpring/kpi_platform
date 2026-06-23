@@ -2,4 +2,4 @@ spring:
   application:
     name: kpi-system
   profiles:
-    active: prod
+    active: local

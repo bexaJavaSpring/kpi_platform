@@ -62,4 +62,4 @@ app:
     keycloak-server-url: http://localhost:8080
     client-id: kpi-cli
     admin-client-id: admin-cli
-    client-secret: cNXjqzBpCxJ1ONmxfMFsq0LE0Kcjjs5R
+    client-secret: anJh1LlAXkP8Tz1LaYnLsWpkHwXVkAfr
