@@ -1,13 +1,19 @@
 package uz.java.kpisystem.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.organization.OrganizationFilter;
 import uz.java.kpisystem.dto.organization.OrganizationInfo;
 import uz.java.kpisystem.dto.organization.OrganizationRequest;
 import uz.java.kpisystem.entity.Organization;
+import uz.java.kpisystem.event.OrganizationCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
+import uz.java.kpisystem.exception.RedisNotSerializableException;
+import uz.java.kpisystem.listener.CacheEvictEventListener;
 import uz.java.kpisystem.mapper.OrganizationMapper;
 import uz.java.kpisystem.repository.OrganizationRepository;
+import uz.java.kpisystem.util.CachePrefix;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,57 +23,72 @@ public class OrganizationService implements IOrganizationService {
 
     private final OrganizationRepository repository;
     private final OrganizationMapper mapper;
+    private final  CacheManagerService cacheManagerService;
+    private final CacheEvictEventListener cacheEvictEventListener;
 
-    public OrganizationService(OrganizationRepository repository, OrganizationMapper mapper) {
+    public OrganizationService(OrganizationRepository repository, OrganizationMapper mapper,CacheManagerService cacheManagerService, CacheEvictEventListener cacheEvictEventListener) {
         this.repository = repository;
         this.mapper = mapper;
+        this.cacheManagerService = cacheManagerService;
+        this.cacheEvictEventListener = cacheEvictEventListener;
     }
 
     @Override
-    public List<OrganizationInfo> getAll(OrganizationFilter organizationFilter) {
+    @Transactional(readOnly = true)
+    public ApiResponse<List<OrganizationInfo>> getAll(OrganizationFilter organizationFilter) {
+        Object data = cacheManagerService.get(String.valueOf(organizationFilter.hashCode()), CachePrefix.ORGANIZATIONS);
+        if(data != null) {
+            return (ApiResponse<List<OrganizationInfo>>) data;
+        }
         List<Organization> all = repository.findAll();  // Alt+Enter bosilsa ozgaruvchiga olinadi
-        // start
-//        List<OrganizationInfo> response = new ArrayList<>();
-//        for (Organization organization : all) {
-//            OrganizationInfo info = new OrganizationInfo();
-//            info.setName(organization.getName());
-//            info.setId(organization.getId());
-//            info.setAddress(organization.getAddress());
-//            info.setEmail(organization.getEmail());
-//            response.add(info);
-//        }
-
-        return all.stream().map(mapper::toResponse).toList();
+        List<OrganizationInfo> response = all.stream().map(mapper::toResponse).toList();
+        ApiResponse<List<OrganizationInfo>> listApiResponse = new ApiResponse<>(response);
+        cacheManagerService.put(String.valueOf(organizationFilter.hashCode()), CachePrefix.ORGANIZATIONS, listApiResponse);
+        return listApiResponse;
     }
 
     @Override
+    @Transactional
     public Long create(OrganizationRequest request) {
         Organization organization = mapper.toEntity(request);
         Organization save = repository.save(organization);
-//        insert into organizations(id, name, addres, ....) values(1, "sdfsd", "dfsdf");
+        cacheEvictEventListener.handleCacheEvict(new OrganizationCacheEvictEvent(CachePrefix.ORGANIZATIONS));
         return save.getId();
     }
 
     @Override
+    @Transactional
     public OrganizationInfo update(Long id, OrganizationRequest request) {
         Optional<Organization> opt = repository.findById(id);
         if (!opt.isPresent())
             throw new CustomNotFoundException("Organization not found");
         Organization organization = opt.get();
         mapper.updateFromRequest(request, organization);
-        repository.save(organization); // update qiladi
-        // update from organizations set name='dsad', address='adczd' where id=1, 2, ...
+        repository.save(organization);
+        cacheEvictEventListener.handleCacheEvict(new OrganizationCacheEvictEvent(CachePrefix.ORGANIZATIONS));
         return getOne(id);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrganizationInfo getOne(Long id) {
+        Object data = cacheManagerService.get(id.toString(), CachePrefix.ORGANIZATIONS);
+        if (data != null)
+            return (OrganizationInfo) data;
+
         Optional<Organization> opt = repository.findById(id);
         if (!opt.isPresent())
             throw new CustomNotFoundException("Organization not found");
 
         Organization organization = opt.get();
-        return mapper.toResponse(organization);
+        OrganizationInfo response = mapper.toResponse(organization);
+        try {
+            cacheManagerService.put(id.toString(), CachePrefix.ORGANIZATIONS, response);
+        } catch (Exception e) {
+            throw new RedisNotSerializableException(e.getMessage());
+        }
+
+        return response;
     }
 
     @Override
@@ -77,6 +98,7 @@ public class OrganizationService implements IOrganizationService {
 //        repository.delete(organization); // hard delete
         organization.makeAsDeleted();
         repository.save(organization); // soft delete
+        cacheEvictEventListener.handleCacheEvict(new OrganizationCacheEvictEvent(CachePrefix.ORGANIZATIONS));
         return true;
     }
 

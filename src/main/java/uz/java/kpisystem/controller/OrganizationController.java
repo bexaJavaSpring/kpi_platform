@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.organization.OrganizationFilter;
 import uz.java.kpisystem.dto.organization.OrganizationInfo;
 import uz.java.kpisystem.dto.organization.OrganizationRequest;
@@ -32,11 +33,11 @@ public class OrganizationController {
 
     //    ResponseEntity --->>> statusCode, success, body
     @GetMapping // get method lar uchun
-    public ResponseEntity<List<OrganizationInfo>> getAll(@RequestParam(required = false, defaultValue = "0") Integer page,
+    public ResponseEntity<?> getAll(@RequestParam(required = false, defaultValue = "0") Integer page,
                                                          @RequestParam(required = false, defaultValue = "10") Integer limit,
                                                          @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
                                                          @RequestParam(required = false) String name) {
-        List<OrganizationInfo> all = service.getAll(new OrganizationFilter(page, limit, sortBy, name));
+        ApiResponse<List<OrganizationInfo>> all = service.getAll(new OrganizationFilter(page, limit, sortBy, name));
         return ResponseEntity.ok(all);
 //        @RequestParam -->> bu Front yuboradigan single field uchun ishlatiladi(yani Frontdan kelgan zaprosni hanldle qiladi)
     }

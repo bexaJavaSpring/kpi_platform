@@ -9,6 +9,7 @@ import uz.java.kpisystem.dto.group.GroupRequest;
 import uz.java.kpisystem.dto.group.GroupResponse;
 import uz.java.kpisystem.entity.Group;
 import uz.java.kpisystem.event.GroupCacheEvictEvent;
+import uz.java.kpisystem.event.ProjectCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
@@ -57,6 +58,7 @@ public class GroupService implements IGroupService {
     public Long create(GroupRequest body) {
         Group build = Group.builder().name(body.getName()).taskCount(body.getTaskCount()).build();
         Group save = repository.save(build);
+        cacheEvictEventListener.handleCacheEvict(new GroupCacheEvictEvent(CachePrefix.GROUP));
         return save.getId();
     }
 
