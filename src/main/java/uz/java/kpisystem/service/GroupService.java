@@ -10,7 +10,6 @@ import uz.java.kpisystem.dto.group.GroupResponse;
 import uz.java.kpisystem.entity.Group;
 import uz.java.kpisystem.event.GroupCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
-import uz.java.kpisystem.exception.GenericRuntimeException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
 import uz.java.kpisystem.mapper.GroupMapper;
@@ -39,17 +38,18 @@ public class GroupService implements IGroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupResponse> getAll(GroupFilter groupFilter) {
+    public ApiResponse<List<GroupResponse>> getAll(GroupFilter groupFilter) {
         Object data = cacheManagerService.get(String.valueOf(groupFilter.hashCode()), CachePrefix.GROUP);
         if (data != null) {
-            return (List<GroupResponse>) data;
+            return (ApiResponse<List<GroupResponse>>) data;
         }
         GroupSpecification spec = new GroupSpecification(groupFilter);
         Pageable pagination = SearchSpecification.getPageable(groupFilter.getPage(), groupFilter.getLimit(),
                 groupFilter.getSortBy());
         List<GroupResponse> response = repository.findAll(spec, pagination).stream().map(mapper::toResponse).toList();
-        cacheManagerService.put(String.valueOf(groupFilter.hashCode()), CachePrefix.GROUP, response);
-        return response;
+        ApiResponse<List<GroupResponse>> groupResponse = new ApiResponse<>(response);
+        cacheManagerService.put(String.valueOf(groupFilter.hashCode()), CachePrefix.GROUP, groupResponse);
+        return groupResponse;
     }
 
     @Override
@@ -61,10 +61,9 @@ public class GroupService implements IGroupService {
     }
 
 
-
     @Override
     @Transactional
-    public Long update(Long id,GroupRequest body) {
+    public Long update(Long id, GroupRequest body) {
         Optional<Group> opt = repository.findById(id);
         if (!opt.isPresent())
             throw new CustomNotFoundException(msgcode);

@@ -1,5 +1,6 @@
 package uz.java.kpisystem.service;
 
+import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.group.GroupFilter;
 import uz.java.kpisystem.dto.group.GroupRequest;
 import uz.java.kpisystem.dto.group.GroupResponse;
@@ -9,7 +10,7 @@ import java.util.List;
 
 public interface IGroupService {
 
-    List<GroupResponse> getAll(GroupFilter groupFilter);
+    ApiResponse<List<GroupResponse>> getAll(GroupFilter groupFilter);
 
     Long create(GroupRequest body);
 

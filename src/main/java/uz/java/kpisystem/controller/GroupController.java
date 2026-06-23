@@ -3,6 +3,7 @@ package uz.java.kpisystem.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.group.GroupFilter;
 import uz.java.kpisystem.dto.group.GroupRequest;
 import uz.java.kpisystem.dto.group.GroupResponse;
@@ -25,8 +26,8 @@ public class GroupController {
     public ResponseEntity<?> getAll(@RequestParam(required = false) Integer page, @RequestParam(required = false) Integer limit,
                                     @RequestParam(required = false) String sortBy,
                                     @RequestParam(required = false) String name, @RequestParam(required = false) Integer taskCount) {
-        List<GroupResponse> groups = this.service.getAll(new GroupFilter(page, limit, sortBy, name, taskCount));
-        return ResponseEntity.ok(groups);
+        ApiResponse<List<GroupResponse>> data = this.service.getAll(new GroupFilter(page, limit, sortBy, name, taskCount));
+        return ResponseEntity.ok(data);
     }
 
     @PostMapping("/create")
