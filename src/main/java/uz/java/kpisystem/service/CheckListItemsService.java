@@ -117,7 +117,7 @@ public class CheckListItemsService implements ICheckListItemsService {
                 .orElseThrow(() -> new CustomNotFoundException(msgcode));
         item.makeAsDeleted();
         repository.save(item);
-        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLISTS));
+        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
         return true;
     }
 }
