@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsFilter;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsRequest;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsResponse;
@@ -21,13 +22,14 @@ public class CheckListItemsController {
     private final ICheckListItemsService service;
 
     @GetMapping("/all")
-    public ResponseEntity<List<CheckListItemsResponse>> getAll(
+    public  ResponseEntity<?>  getAll(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long checkListId) {
-        return ResponseEntity.ok(service.getAll(new CheckListItemsFilter(page, limit, sortBy, name, checkListId)));
+        ApiResponse<List<CheckListItemsResponse>> data = service.getAll(new CheckListItemsFilter(page, limit, sortBy, name, checkListId));
+      return   ResponseEntity.ok(data);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYER')")

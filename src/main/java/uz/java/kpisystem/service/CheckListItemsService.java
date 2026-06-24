@@ -3,18 +3,25 @@ package uz.java.kpisystem.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsFilter;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsRequest;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsResponse;
 import uz.java.kpisystem.entity.CheckListItem;
+import uz.java.kpisystem.event.CheckListItemsCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
+import uz.java.kpisystem.exception.RedisNotSerializableException;
+import uz.java.kpisystem.listener.CacheEvictEventListener;
 import uz.java.kpisystem.mapper.CheckListItemsMapper;
 import uz.java.kpisystem.repository.CheckListItemRepository;
 import uz.java.kpisystem.repository.CheckListRepository;
 import uz.java.kpisystem.repository.UserRepository;
 import uz.java.kpisystem.specifications.CheckListItemsSpecification;
+
 import uz.java.kpisystem.specifications.SearchSpecification;
 import org.springframework.data.domain.Pageable;
+import uz.java.kpisystem.util.CachePrefix;
+
 import java.util.List;
 
 
@@ -26,14 +33,25 @@ public class CheckListItemsService implements ICheckListItemsService {
     private final CheckListRepository checkListRepository;
     private final UserRepository userRepository;
     private final CheckListItemsMapper mapper;
+    private  final CacheManagerService cacheManagerService;
+    private final CacheEvictEventListener cacheEvictEventListener;
+
     private final String msgcode = "checkListItem.not.found";
 
     @Override
     @Transactional(readOnly = true)
-    public List<CheckListItemsResponse> getAll(CheckListItemsFilter filter) {
-        Pageable pagination = SearchSpecification.getPageable(filter.getPage(), filter.getLimit(), filter.getSortBy());
-        return repository.findAll(new CheckListItemsSpecification(filter), pagination)
-                .stream().map(mapper::toResponse).toList();
+    public ApiResponse<List<CheckListItemsResponse>> getAll(CheckListItemsFilter filter) {
+        Object data = cacheManagerService.get(String.valueOf(filter.hashCode()), CachePrefix.CHECKLIST_ITEMS);
+        if(data != null) {
+            return (ApiResponse<List<CheckListItemsResponse>>) data;
+        }
+
+        CheckListItemsSpecification specification = new CheckListItemsSpecification(filter);
+        Pageable pagination = SearchSpecification.getPageable(filter.getPage(),filter.getLimit(),filter.getSortBy());
+        List<CheckListItemsResponse>  responses = repository.findAll(specification,pagination).stream().map(mapper::toResponse).toList();
+        ApiResponse<List<CheckListItemsResponse>> apiResponse = new ApiResponse<>(responses);
+        cacheManagerService.put(String.valueOf(filter.hashCode()), CachePrefix.CHECKLIST_ITEMS, apiResponse);
+        return apiResponse;
     }
 
     @Override
@@ -50,6 +68,7 @@ public class CheckListItemsService implements ICheckListItemsService {
                             .orElseThrow(() -> new CustomNotFoundException("user.not.found"))
             );
         }
+        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
         return repository.save(item).getId();
     }
 
@@ -69,15 +88,26 @@ public class CheckListItemsService implements ICheckListItemsService {
                             .orElseThrow(() -> new CustomNotFoundException("user.not.found"))
             );
         }
+        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
         return mapper.toResponse(repository.save(item));
     }
 
     @Override
     @Transactional(readOnly = true)
     public CheckListItemsResponse getOne(Long id) {
-        return mapper.toResponse(
+        Object data = cacheManagerService.get(id.toString(),CachePrefix.CHECKLIST_ITEMS);
+        if(data != null) {
+            return (CheckListItemsResponse) data;
+        }
+        CheckListItemsResponse response = mapper.toResponse(
                 repository.findById(id).orElseThrow(() -> new CustomNotFoundException(msgcode))
         );
+        try{
+            cacheManagerService.put(id.toString(),CachePrefix.CHECKLIST_ITEMS,response);
+        }catch (Exception e) {
+            throw new RedisNotSerializableException(e.getMessage());
+        }
+        return response;
     }
 
     @Override
@@ -87,6 +117,7 @@ public class CheckListItemsService implements ICheckListItemsService {
                 .orElseThrow(() -> new CustomNotFoundException(msgcode));
         item.makeAsDeleted();
         repository.save(item);
+        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLISTS));
         return true;
     }
 }

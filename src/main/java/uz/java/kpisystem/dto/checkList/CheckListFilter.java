@@ -1,12 +1,13 @@
 package uz.java.kpisystem.dto.checkList;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import uz.java.kpisystem.dto.BaseFilter;
 
 @Getter
 @Setter
-
+@EqualsAndHashCode(callSuper = true)
 public class CheckListFilter extends BaseFilter{
     private String name;
 

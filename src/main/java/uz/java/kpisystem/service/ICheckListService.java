@@ -8,7 +8,7 @@ import uz.java.kpisystem.dto.checkList.CheckListResponse;
 import java.util.List;
 
 public interface ICheckListService {
-    List<CheckListResponse>  getAll(CheckListFilter checkListFilter);
+    ApiResponse<List<CheckListResponse>>  getAll(CheckListFilter checkListFilter);
 
     Long create(CheckListRequest request);
 
