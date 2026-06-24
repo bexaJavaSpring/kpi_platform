@@ -40,4 +40,24 @@ public class FileService {
         }
         return path;
     }
+
+    public String getPresignedUrl(String objectName) {
+        if (!StringUtils.hasText(objectName))
+            return null;
+        try {
+            return minioService.generatePresignedUrl(objectName);
+        } catch (Exception e) {
+            // o'qish (getAll/getOne) paytida URL yaratib bo'lmasa, butun javobni buzmaymiz
+            log.warn("Presigned URL yaratib bo'lmadi: {}", objectName, e);
+            return null;
+        }
+    }
+
+    public boolean exists(String objectName) {
+        return minioService.objectExists(objectName);
+    }
+
+    public void deleteFile(String objectName) {
+        minioService.removeObject(objectName);
+    }
 }

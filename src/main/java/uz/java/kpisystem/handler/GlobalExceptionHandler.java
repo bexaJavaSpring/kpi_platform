@@ -8,9 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
-import uz.java.kpisystem.exception.CustomNotFoundException;
-import uz.java.kpisystem.exception.GenericRuntimeException;
-import uz.java.kpisystem.exception.RedisNotSerializableException;
+import uz.java.kpisystem.exception.*;
 import uz.java.kpisystem.util.ErrorUtil;
 import uz.java.kpisystem.util.Translator;
 
@@ -72,4 +70,22 @@ public class GlobalExceptionHandler {
         body.put("message", translator.toLocale("api.not.found"));
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
+
+
+    @ExceptionHandler(FileNotFoundException.class)
+    public ResponseEntity<Object> handleFileNotFoundException(FileNotFoundException ex) {
+        log.error("FileNotFoundException on: {}", ErrorUtil.getStacktrace(ex));
+        return new ResponseEntity<>(Map.of("message", translator.toLocale(ex.getMessage())),
+                HttpStatus.NOT_FOUND);
+    }
+
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<Object> handleFileStorageException(FileStorageException ex) {
+        log.error("FileStorageException on: {}", ErrorUtil.getStacktrace(ex));
+        return new ResponseEntity<>(Map.of("message", translator.toLocale(ex.getMessage())),
+                HttpStatus.NOT_FOUND);
+    }
+
+
 }

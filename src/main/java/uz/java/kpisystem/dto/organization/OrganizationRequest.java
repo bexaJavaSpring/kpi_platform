@@ -3,6 +3,7 @@ package uz.java.kpisystem.dto.organization;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 @Data
 public class OrganizationRequest {
@@ -14,4 +15,6 @@ public class OrganizationRequest {
     @Email
     private String email;
     private String website;
+    @NotBlank(message = "organization.logo.must.not.be.blank")
+    private String logo;
 }

@@ -1,6 +1,7 @@
 package uz.java.kpisystem.service;
 
 import io.minio.*;
+import io.minio.errors.ErrorResponseException;
 import io.minio.errors.MinioException;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
@@ -103,6 +104,40 @@ public class MinioService {
                 .replace("{YYYY}", String.valueOf(now.get(Calendar.YEAR)))
                 .replace("{MM}", leftPad(String.valueOf(now.get(Calendar.MONTH) + 1), 2, "0"))
                 .replace("{DD}", leftPad(String.valueOf(now.get(Calendar.DAY_OF_MONTH)), 2, "0"));
+    }
+
+    public boolean objectExists(String objectName) {
+        if (!StringUtils.hasText(objectName))
+            return false;
+        try {
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(defaultBucketName)
+                    .object(objectName)
+                    .build());
+            return true;
+        } catch (ErrorResponseException e) {
+            System.out.println(e);
+            if ("NoSuchKey".equals(e.errorResponse().code()))
+                return false;
+            throw new RuntimeException("MinIO object tekshirishda xato: " + objectName, e);
+        } catch (Exception e) {
+            throw new RuntimeException("MinIO object tekshirishda xato: " + objectName, e);
+        }
+    }
+
+    public void removeObject(String objectName) {
+        if (!StringUtils.hasText(objectName))
+            return;
+        try {
+            minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(defaultBucketName)
+                    .object(objectName)
+                    .build());
+        } catch (Exception e) {
+            System.out.println(e);
+            // cleanup faili asosiy operatsiyani buzmasligi kerak, shuning uchun faqat log qilamiz
+            log.warn("MinIO object o'chirilmadi: {}", objectName, e);
+        }
     }
 
     public String generatePresignedUrl(String objectName) {

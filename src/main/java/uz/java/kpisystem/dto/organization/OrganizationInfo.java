@@ -12,4 +12,6 @@ public class OrganizationInfo {
     private String phoneNumber;
     private String email;
     private String website;
+    private String logo;
+    private String logoForImage;
 }
