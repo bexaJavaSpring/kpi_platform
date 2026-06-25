@@ -55,4 +55,10 @@ public class TaskController {
     public ResponseEntity<Boolean> delete(@PathVariable Long id) {
         return ResponseEntity.ok(service.delete(id));
     }
+
+    @PostMapping("/{id}/copy")
+    @PreAuthorize("hasAnyRole('ADMIN','PROJECT_MANAGER')")
+    public ApiResponse<Long> copy(@PathVariable Long id) {
+        return new ApiResponse<>( service.copy(id));
+    }
 }

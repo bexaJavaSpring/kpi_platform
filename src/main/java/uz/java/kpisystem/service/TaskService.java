@@ -131,4 +131,36 @@ public class TaskService implements ITaskService {
         cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.TASK));
         return true;
     }
+
+    @Override
+    @Transactional
+    public Long copy(Long id) {
+        Task task = repository.findById(id).orElseThrow(() -> new CustomNotFoundException("task.not.found"));
+        if (Boolean.TRUE.equals(task.getDeleted())) throw new CustomNotFoundException("task.not.found");
+        Task copiedTask = new Task();
+        mapper.copyFromExisting(task,copiedTask);
+        copiedTask.setDeleted(false);
+        copiedTask.setParentId(task.getParentId());
+        repository.save(copiedTask);
+
+
+        taskMemberRepository.findAllByTask(task).forEach( member -> {
+            TaskMember newMember = new TaskMember();
+            newMember.setTask(copiedTask);
+            newMember.setUser(member.getUser());
+            taskMemberRepository.save(newMember);
+        });
+
+        taskTagRepository.findAllByTask(task).forEach(tag -> {
+            TaskTag newTag = new TaskTag();
+            newTag.setTask(copiedTask);
+            newTag.setName(tag.getName());
+            taskTagRepository.save(newTag);
+        });
+
+        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.TASK));
+        return copiedTask.getId();
+    }
+
+
 }

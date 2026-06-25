@@ -18,4 +18,6 @@ public interface ITaskService {
     ApiResponse<TaskResponse> update(Long id, TaskRequest request);
 
     Boolean delete(Long id);
+
+    Long copy(Long id);
 }
