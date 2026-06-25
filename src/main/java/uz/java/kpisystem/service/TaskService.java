@@ -8,10 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.java.kpisystem.dto.ApiResponse;
 import uz.java.kpisystem.dto.file.FileResponse;
 import uz.java.kpisystem.dto.file.FileStat;
-import uz.java.kpisystem.dto.project.ProjectInfo;
 import uz.java.kpisystem.dto.task.TaskFilter;
 import uz.java.kpisystem.dto.task.TaskRequest;
 import uz.java.kpisystem.dto.task.TaskResponse;
+import uz.java.kpisystem.dto.taskTag.TaskTagResponse;
 import uz.java.kpisystem.entity.*;
 import uz.java.kpisystem.event.GenericCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
@@ -39,8 +39,8 @@ public class TaskService implements ITaskService {
     private final TaskTagRepository taskTagRepository;
     private final CacheManagerService cacheManagerService;
     private final CacheEvictEventListener cacheEvictEventListener;
-    private  final ProjectService projectService;
     private  final FileService fileService;
+
 
     @Override
     @Transactional
@@ -78,10 +78,11 @@ public class TaskService implements ITaskService {
     @Override
     @Transactional(readOnly = true)
     public ApiResponse<List<TaskResponse>> getAll(TaskFilter filter) {
-//        Object data = cacheManagerService.get(String.valueOf(filter.hashCode()), CachePrefix.TASK);
-//        if (data != null) {
-//            return (ApiResponse<List<TaskResponse>>) data;
-//        }
+        String cacheKey = cacheKey(filter);
+        Object data = cacheManagerService.get(cacheKey, CachePrefix.TASK);
+        if (data != null) {
+            return (ApiResponse<List<TaskResponse>>) data;
+        }
         TaskSpecification spec = new TaskSpecification(filter);
         Pageable pagination = SearchSpecification.getPageable(filter.getPage(), filter.getLimit(),
                 filter.getSortBy());
@@ -90,11 +91,11 @@ public class TaskService implements ITaskService {
                 .map(this::toTaskResponse).toList();
 
         ApiResponse<List<TaskResponse>> apiResponse = new ApiResponse<>(all);
-//        try {
-//            cacheManagerService.put(String.valueOf(filter.hashCode()), CachePrefix.TASK, apiResponse);
-//        } catch (Exception e) {
-//            throw new RedisNotSerializableException(e.getMessage());
-//        }
+        try {
+            cacheManagerService.put(cacheKey, CachePrefix.TASK, apiResponse);
+        } catch (Exception e) {
+            throw new RedisNotSerializableException(e.getMessage());
+        }
         return apiResponse;
     }
 
@@ -173,10 +174,28 @@ public class TaskService implements ITaskService {
         TaskResponse response = mapper.toResponse(task);
         response.setAttachmentUrls(toFileResponses(task.getAttachmentUrls()));
         response.setChildren(buildChildren(task.getId()));
+        response.setTags(this.getTags(task.getId()));
         return response;
     }
 
-    // newParentId'dan yuqoriga (ajdodlar bo'yicha) yurib, taskId'ga duch kelsa cikl bor demak
+    private List<TaskTagResponse> getTags(Long taskId) {
+        return taskTagRepository.findAllByTaskId(taskId).stream()
+                .map(tag -> {
+                    TaskTagResponse dto = new TaskTagResponse();
+                    dto.setId(tag.getId());
+                    dto.setName(tag.getName());
+                    return dto;
+                })
+                .toList();
+    };
+
+
+    private String cacheKey(TaskFilter filter) {
+        return filter.getPage() + "_" + filter.getLimit() + "_"
+                + filter.getSortBy() + "_" + filter.getName();
+    }
+
+    // newParentId'dan yuqoriga (ajdodlar bo'yicha) yurib, taskId'ga duch kelsa cikl bor
     private void validateNoCycle(Long taskId, Long newParentId) {
         Long ancestorId = newParentId;
         while (ancestorId != null) {

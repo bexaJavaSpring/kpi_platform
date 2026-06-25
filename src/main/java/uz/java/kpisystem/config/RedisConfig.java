@@ -1,5 +1,8 @@
 package uz.java.kpisystem.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,14 +22,27 @@ public class RedisConfig {
 
     @Bean
     public RedisTemplate<String, Object> redisCache() {
+        GenericJackson2JsonRedisSerializer jsonSerializer = jsonSerializer();
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(jedisConnectionFactory());
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(jsonSerializer);
         template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashValueSerializer(jsonSerializer);
         template.afterPropertiesSet();
         return template;
+    }
+
+    private GenericJackson2JsonRedisSerializer jsonSerializer() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        // LocalDateTime/LocalDate kabi Java 8 sana tiplarini serializatsiya qila olishi uchun
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // @class type-info saqlanadi, shunda deserializatsiyada aniq tip tiklanadi (cast ishlaydi)
+        objectMapper.activateDefaultTyping(
+                objectMapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL);
+        return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 
     @Bean

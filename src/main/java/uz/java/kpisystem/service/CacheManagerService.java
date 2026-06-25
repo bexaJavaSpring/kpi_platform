@@ -10,6 +10,7 @@ import uz.java.kpisystem.config.UserSession;
 import uz.java.kpisystem.dto.CacheDto;
 import uz.java.kpisystem.entity.User;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,6 +18,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CacheManagerService {
+    // presigned URL'lardan (7 soat) qisqaroq bo'lishi shart, aks holda o'lik URL qaytadi
+    private static final Duration DEFAULT_TTL = Duration.ofHours(1);
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final UserSession userSession;
     private ValueOperations<String, Object> operations;
@@ -31,7 +35,11 @@ public class CacheManagerService {
     }
 
     public void put(String key, String cachePrefix, Object data) {
-        operations.set(generateKey(key, cachePrefix), data);
+        put(key, cachePrefix, data, DEFAULT_TTL);
+    }
+
+    public void put(String key, String cachePrefix, Object data, Duration ttl) {
+        operations.set(generateKey(key, cachePrefix), data, ttl);
     }
 
     private String generateKey(String key, String cachePrefix) {
@@ -56,7 +64,7 @@ public class CacheManagerService {
             if (!allKeys.isEmpty()) {
                 redisTemplate.delete(allKeys.stream()
                         .filter(redisKey -> redisKey.startsWith(cachePrefix)
-                                && redisKey.endsWith(user.getId().toString()))
+                                && redisKey.endsWith("/" + user.getId()))
                         .collect(Collectors.toSet()));
             }
         }
