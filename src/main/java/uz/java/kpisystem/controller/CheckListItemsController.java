@@ -27,8 +27,7 @@ public class CheckListItemsController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long checkListId) {
-        ApiResponse<List<CheckListItemsResponse>> data = service.getAll(new CheckListItemsFilter(page, limit, sortBy, name, checkListId));
+            @RequestParam(required = false) Long checkListId) {ApiResponse<List<CheckListItemsResponse>> data = service.getAll(new CheckListItemsFilter(page, limit, sortBy, name, checkListId));
       return   ResponseEntity.ok(data);
     }
 

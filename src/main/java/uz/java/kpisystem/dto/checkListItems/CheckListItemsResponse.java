@@ -14,4 +14,5 @@ public class CheckListItemsResponse {
     private Long userId;
     private String userFirstName;
     private String userLastName;
+    private boolean deleted;
 }
