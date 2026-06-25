@@ -1,32 +1,33 @@
 package uz.java.kpisystem.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.java.kpisystem.dto.ApiResponse;
+import uz.java.kpisystem.dto.file.FileResponse;
+import uz.java.kpisystem.dto.file.FileStat;
+import uz.java.kpisystem.dto.project.ProjectInfo;
 import uz.java.kpisystem.dto.task.TaskFilter;
 import uz.java.kpisystem.dto.task.TaskRequest;
 import uz.java.kpisystem.dto.task.TaskResponse;
-import uz.java.kpisystem.entity.Task;
-import uz.java.kpisystem.entity.TaskMember;
-import uz.java.kpisystem.entity.TaskTag;
-import uz.java.kpisystem.entity.User;
-import uz.java.kpisystem.event.ProjectCacheEvictEvent;
+import uz.java.kpisystem.entity.*;
+import uz.java.kpisystem.event.GenericCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
+import uz.java.kpisystem.exception.GenericRuntimeException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
 import uz.java.kpisystem.mapper.TaskMapper;
-import uz.java.kpisystem.repository.TaskMemberRepository;
-import uz.java.kpisystem.repository.TaskRepository;
-import uz.java.kpisystem.repository.TaskTagRepository;
-import uz.java.kpisystem.repository.UserRepository;
+import uz.java.kpisystem.repository.*;
 import uz.java.kpisystem.specifications.SearchSpecification;
 import uz.java.kpisystem.specifications.TaskSpecification;
 import uz.java.kpisystem.util.CachePrefix;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskService implements ITaskService {
@@ -38,6 +39,8 @@ public class TaskService implements ITaskService {
     private final TaskTagRepository taskTagRepository;
     private final CacheManagerService cacheManagerService;
     private final CacheEvictEventListener cacheEvictEventListener;
+    private  final ProjectService projectService;
+    private  final FileService fileService;
 
     @Override
     @Transactional
@@ -68,29 +71,30 @@ public class TaskService implements ITaskService {
         }
         task.setDeleted(false);
         repository.save(task);
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.TASK));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<TaskService>(CachePrefix.TASK));
         return task.getId();
     }
 
     @Override
     @Transactional(readOnly = true)
     public ApiResponse<List<TaskResponse>> getAll(TaskFilter filter) {
-        Object data = cacheManagerService.get(String.valueOf(filter.hashCode()), CachePrefix.TASK);
-        if (data != null) {
-            return (ApiResponse<List<TaskResponse>>) data;
-        }
+//        Object data = cacheManagerService.get(String.valueOf(filter.hashCode()), CachePrefix.TASK);
+//        if (data != null) {
+//            return (ApiResponse<List<TaskResponse>>) data;
+//        }
         TaskSpecification spec = new TaskSpecification(filter);
         Pageable pagination = SearchSpecification.getPageable(filter.getPage(), filter.getLimit(),
                 filter.getSortBy());
 
         List<TaskResponse> all = repository.findAll(spec, pagination).stream()
-                .map(mapper::toResponse).toList();
+                .map(this::toTaskResponse).toList();
+
         ApiResponse<List<TaskResponse>> apiResponse = new ApiResponse<>(all);
-        try {
-            cacheManagerService.put(String.valueOf(filter.hashCode()), CachePrefix.TASK, apiResponse);
-        } catch (Exception e) {
-            throw new RedisNotSerializableException(e.getMessage());
-        }
+//        try {
+//            cacheManagerService.put(String.valueOf(filter.hashCode()), CachePrefix.TASK, apiResponse);
+//        } catch (Exception e) {
+//            throw new RedisNotSerializableException(e.getMessage());
+//        }
         return apiResponse;
     }
 
@@ -102,7 +106,8 @@ public class TaskService implements ITaskService {
 
         Task task = repository.findById(id).orElseThrow(() -> new CustomNotFoundException("task.not.found"));
         if (Boolean.TRUE.equals(task.getDeleted())) throw new CustomNotFoundException("task.not.found");
-        ApiResponse<TaskResponse> apiResponse = new ApiResponse<>(mapper.toResponse(task));
+        TaskResponse response = toTaskResponse(task);
+        ApiResponse<TaskResponse> apiResponse = new ApiResponse<>(response);
         try {
             cacheManagerService.put(id.toString(), CachePrefix.TASK, apiResponse);
         } catch (Exception e) {
@@ -116,10 +121,12 @@ public class TaskService implements ITaskService {
     public ApiResponse<TaskResponse> update(Long id, TaskRequest request) {
         Task task = repository.findById(id).orElseThrow(() -> new CustomNotFoundException("task.not.found"));
         if (Boolean.TRUE.equals(task.getDeleted())) throw new CustomNotFoundException("task.not.found");
+        if (request.getParentId() != null)
+            validateNoCycle(id, request.getParentId());
         mapper.updateFromRequest(request, task);
         repository.save(task);
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.TASK));
-        return new ApiResponse<>(mapper.toResponse(task));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<TaskService>(CachePrefix.TASK));
+        return new ApiResponse<>(toTaskResponse(task));
     }
 
     @Override
@@ -128,7 +135,7 @@ public class TaskService implements ITaskService {
         Task task = repository.findById(id).orElseThrow(() -> new CustomNotFoundException("task.not.found"));
         task.makeAsDeleted();
         repository.save(task);
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.TASK));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<TaskService>(CachePrefix.TASK));
         return true;
     }
 
@@ -158,9 +165,50 @@ public class TaskService implements ITaskService {
             taskTagRepository.save(newTag);
         });
 
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.TASK));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<TaskService>(CachePrefix.TASK));
         return copiedTask.getId();
     }
 
+    private TaskResponse toTaskResponse(Task task) {
+        TaskResponse response = mapper.toResponse(task);
+        response.setAttachmentUrls(toFileResponses(task.getAttachmentUrls()));
+        response.setChildren(buildChildren(task.getId()));
+        return response;
+    }
+
+    // newParentId'dan yuqoriga (ajdodlar bo'yicha) yurib, taskId'ga duch kelsa cikl bor demak
+    private void validateNoCycle(Long taskId, Long newParentId) {
+        Long ancestorId = newParentId;
+        while (ancestorId != null) {
+            if (ancestorId.equals(taskId))
+                throw new GenericRuntimeException("task.parent.cycle");
+            ancestorId = repository.findById(ancestorId)
+                    .map(Task::getParentId)
+                    .orElse(null);
+        }
+    }
+
+    // parentId bo'yicha bolalarni topib, rekursiv ravishda daraxt quradi
+    private List<TaskResponse> buildChildren(Long parentId) {
+        return repository.findByParentIdAndDeletedFalse(parentId).stream()
+                .map(this::toTaskResponse)
+                .toList();
+    }
+
+    private List<FileResponse> toFileResponses(List<String> keys) {
+        if (keys == null || keys.isEmpty()) return List.of();
+        List<FileResponse> result = new ArrayList<>();
+        for (String key : keys) {
+            FileStat stat = fileService.stat(key);
+            if (stat == null) continue;                 // Minioda yo'q -> tashlab ketamiz
+            FileResponse fr = new FileResponse();
+            fr.setFileName(key);
+            fr.setSize(stat.size());
+            fr.setContentType(stat.contentType());
+            fr.setFileUrl(fileService.getPresignedUrl(key));
+            result.add(fr);
+        }
+        return result;
+    }
 
 }

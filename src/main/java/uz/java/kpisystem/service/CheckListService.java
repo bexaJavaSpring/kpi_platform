@@ -9,7 +9,7 @@ import uz.java.kpisystem.dto.checkList.CheckListRequest;
 import uz.java.kpisystem.dto.checkList.CheckListResponse;
 import uz.java.kpisystem.entity.CheckList;
 import uz.java.kpisystem.entity.CheckListItem;
-import uz.java.kpisystem.event.CheckListCacheEvictEvent;
+import uz.java.kpisystem.event.GenericCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
@@ -68,7 +68,7 @@ public class CheckListService implements ICheckListService {
             checkList.setItems(items);
         }
 
-        cacheEvictEventListener.handleCacheEvict(new CheckListCacheEvictEvent(CachePrefix.CHECKLISTS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.CHECKLISTS));
         return repository.save(checkList).getId();
     }
 
@@ -88,7 +88,7 @@ public class CheckListService implements ICheckListService {
             });
             checkList.setItems(items);
         }
-        cacheEvictEventListener.handleCacheEvict(new CheckListCacheEvictEvent(CachePrefix.CHECKLISTS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.CHECKLISTS));
         return mapper.toResponse(repository.save(checkList));
     }
 
@@ -118,7 +118,7 @@ public class CheckListService implements ICheckListService {
                 .orElseThrow(() -> new CustomNotFoundException(msgcode));
         checkList.makeAsDeleted();
         repository.save(checkList);
-        cacheEvictEventListener.handleCacheEvict(new CheckListCacheEvictEvent(CachePrefix.CHECKLISTS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.CHECKLISTS));
         return true;
     }
 }

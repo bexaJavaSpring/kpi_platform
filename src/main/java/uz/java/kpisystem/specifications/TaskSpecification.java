@@ -18,6 +18,9 @@ public record TaskSpecification(TaskFilter filter) implements Specification<Task
 
 //        predicates.add(criteriaBuilder.equal(root.get("deleted"), false));
 
+        // faqat root task'lar (bolalari children ichida rekursiv keladi)
+        predicates.add(criteriaBuilder.isNull(root.get("parentId")));
+
         if (filter.getName() != null)
             predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")),
                     "%" + filter.getName().toLowerCase() + "%"));

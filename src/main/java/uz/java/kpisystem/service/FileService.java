@@ -1,10 +1,12 @@
 package uz.java.kpisystem.service;
 
+import io.minio.StatObjectResponse;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import uz.java.kpisystem.dto.file.FileStat;
 import uz.java.kpisystem.exception.FileStorageException;
 
 import java.util.Objects;
@@ -55,6 +57,14 @@ public class FileService {
 
     public boolean exists(String objectName) {
         return minioService.objectExists(objectName);
+    }
+
+    public FileStat stat(String objectName) {
+        StatObjectResponse s = minioService.statObject(objectName);
+        if (s == null)
+            return null;
+        String name = objectName.substring(objectName.lastIndexOf('/') + 1);
+        return new FileStat(name, s.size(), s.contentType());
     }
 
     public void deleteFile(String objectName) {

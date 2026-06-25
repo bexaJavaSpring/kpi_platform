@@ -1,6 +1,7 @@
 package uz.java.kpisystem.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,6 +51,7 @@ public class Task extends Auditable {
     private Long trackTimeInMinutes;
 
     @ElementCollection
+    @BatchSize(size = 50)
     private List<String> attachmentUrls = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

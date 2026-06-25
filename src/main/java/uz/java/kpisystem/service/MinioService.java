@@ -140,6 +140,23 @@ public class MinioService {
         }
     }
 
+    public StatObjectResponse statObject(String objectName) {
+        if (!StringUtils.hasText(objectName))
+            return null;
+        try {
+            return minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(defaultBucketName)
+                    .object(objectName)
+                    .build());
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code()))
+                return null;
+            throw new RuntimeException("MinIO stat xato: " + objectName, e);
+        } catch (Exception e) {
+            throw new RuntimeException("MinIO stat xato: " + objectName, e);
+        }
+    }
+
     public String generatePresignedUrl(String objectName) {
         try {
             return minioClient.getPresignedObjectUrl(

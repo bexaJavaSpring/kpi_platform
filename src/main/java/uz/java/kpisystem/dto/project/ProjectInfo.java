@@ -9,6 +9,7 @@ import uz.java.kpisystem.entity.enums.ProjectStatus;
 @Data
 @JsonInclude(value = JsonInclude.Include.NON_NULL)
 public class ProjectInfo {
+    private Long id;
     private String name;
     private String description;
     private String startDate;

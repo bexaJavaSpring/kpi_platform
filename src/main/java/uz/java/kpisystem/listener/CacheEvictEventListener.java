@@ -12,29 +12,8 @@ public class CacheEvictEventListener {
     private final CacheManagerService cacheManagerService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleCacheEvict(ProjectCacheEvictEvent event) {
+    public void handleCacheEvict(GenericCacheEvictEvent event) {
         // Faqat DB commit bo'lgandan KEYIN ishlaydi!
-        cacheManagerService.delete(event.cachePrefix());
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleCacheEvict(GroupCacheEvictEvent event) {
-        cacheManagerService.delete(event.cachePrefix());
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleCacheEvict(OrganizationCacheEvictEvent event) {
-        cacheManagerService.delete(event.cachePrefix());
-    }
-
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleCacheEvict(CheckListCacheEvictEvent event) {
-        cacheManagerService.delete(event.cachePrefix());
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleCacheEvict(CheckListItemsCacheEvictEvent event) {
         cacheManagerService.delete(event.cachePrefix());
     }
 }

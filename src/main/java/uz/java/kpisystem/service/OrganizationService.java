@@ -10,7 +10,7 @@ import uz.java.kpisystem.dto.organization.OrganizationFilter;
 import uz.java.kpisystem.dto.organization.OrganizationInfo;
 import uz.java.kpisystem.dto.organization.OrganizationRequest;
 import uz.java.kpisystem.entity.Organization;
-import uz.java.kpisystem.event.OrganizationCacheEvictEvent;
+import uz.java.kpisystem.event.GenericCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
 import uz.java.kpisystem.exception.FileNotFoundException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
@@ -61,7 +61,7 @@ public class OrganizationService implements IOrganizationService {
         Organization organization = mapper.toEntity(request);
         Organization save = repository.save(organization);
 
-        cacheEvictEventListener.handleCacheEvict(new OrganizationCacheEvictEvent(CachePrefix.ORGANIZATIONS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.ORGANIZATIONS));
         return save.getId();
     }
 
@@ -81,7 +81,7 @@ public class OrganizationService implements IOrganizationService {
             if (StringUtils.hasText(oldLogo) && !oldLogo.equals(newLogo))
                 fileService.deleteFile(oldLogo);
         }
-        cacheEvictEventListener.handleCacheEvict(new OrganizationCacheEvictEvent(CachePrefix.ORGANIZATIONS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.ORGANIZATIONS));
         return getOne(id);
     }
 
@@ -127,7 +127,7 @@ public class OrganizationService implements IOrganizationService {
 //        repository.delete(organization); // hard delete
         organization.makeAsDeleted();
         repository.save(organization); // soft delete
-        cacheEvictEventListener.handleCacheEvict(new OrganizationCacheEvictEvent(CachePrefix.ORGANIZATIONS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.ORGANIZATIONS));
         return true;
     }
 

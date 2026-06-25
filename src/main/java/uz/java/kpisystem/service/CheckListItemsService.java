@@ -8,7 +8,7 @@ import uz.java.kpisystem.dto.checkListItems.CheckListItemsFilter;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsRequest;
 import uz.java.kpisystem.dto.checkListItems.CheckListItemsResponse;
 import uz.java.kpisystem.entity.CheckListItem;
-import uz.java.kpisystem.event.CheckListItemsCacheEvictEvent;
+import uz.java.kpisystem.event.GenericCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
@@ -68,7 +68,7 @@ public class CheckListItemsService implements ICheckListItemsService {
                             .orElseThrow(() -> new CustomNotFoundException("user.not.found"))
             );
         }
-        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
         return repository.save(item).getId();
     }
 
@@ -88,7 +88,7 @@ public class CheckListItemsService implements ICheckListItemsService {
                             .orElseThrow(() -> new CustomNotFoundException("user.not.found"))
             );
         }
-        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
         return mapper.toResponse(repository.save(item));
     }
 
@@ -117,7 +117,7 @@ public class CheckListItemsService implements ICheckListItemsService {
                 .orElseThrow(() -> new CustomNotFoundException(msgcode));
         item.makeAsDeleted();
         repository.save(item);
-        cacheEvictEventListener.handleCacheEvict(new CheckListItemsCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.CHECKLIST_ITEMS));
         return true;
     }
 }

@@ -9,7 +9,7 @@ import uz.java.kpisystem.dto.project.ProjectRequest;
 import uz.java.kpisystem.entity.Group;
 import uz.java.kpisystem.entity.Organization;
 import uz.java.kpisystem.entity.Project;
-import uz.java.kpisystem.event.ProjectCacheEvictEvent;
+import uz.java.kpisystem.event.GenericCacheEvictEvent;
 import uz.java.kpisystem.exception.CustomNotFoundException;
 import uz.java.kpisystem.exception.RedisNotSerializableException;
 import uz.java.kpisystem.listener.CacheEvictEventListener;
@@ -19,7 +19,6 @@ import uz.java.kpisystem.repository.OrganizationRepository;
 import uz.java.kpisystem.repository.ProjectRepository;
 import uz.java.kpisystem.util.CachePrefix;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +43,7 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public ApiResponse<List<ProjectInfo>> getAll(ProjectFilter projectFilter) {
+        public ApiResponse<List<ProjectInfo>> getAll(ProjectFilter projectFilter) {
         Object data = cacheManagerService.get(String.valueOf(projectFilter.hashCode()), CachePrefix.PROJECT);
         if (data != null) {
             return (ApiResponse<List<ProjectInfo>>) data;
@@ -68,7 +67,7 @@ public class ProjectService implements IProjectService {
         project.setOrganization(org);
         project.setGroup(group);
         repository.save(project);
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.PROJECT));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<ProjectService>(CachePrefix.PROJECT));
         return project.getId();
     }
 
@@ -92,7 +91,7 @@ public class ProjectService implements IProjectService {
         }
 
         repository.save(project);
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.PROJECT));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.PROJECT));
         return getOne(id);
     }
 
@@ -123,7 +122,7 @@ public class ProjectService implements IProjectService {
         project.makeAsDeleted();
         repository.save(project);
         // todo project o'chsa undagi hamma task lar ham o'chadi va cachedan ham unga bogliq hamma entity malumotlari o'chishi kk
-        cacheEvictEventListener.handleCacheEvict(new ProjectCacheEvictEvent(CachePrefix.PROJECT));
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent(CachePrefix.PROJECT));
         return true;
     }
 
