@@ -6,4 +6,5 @@ public interface CachePrefix {
     String ORGANIZATIONS = "organizations";
     String CHECKLISTS = "checklists";
     String CHECKLIST_ITEMS = "checklist-items";
+    String TASK = "tasks";
 }
