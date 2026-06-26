@@ -62,4 +62,13 @@ public class TaskController {
         return new ApiResponse<>( service.copy(id));
     }
 
+    @PostMapping("/{taskId}/move")
+    @PreAuthorize("hasAnyRole('ADMIN','PROJECT_MANAGER')")
+    public ApiResponse<Boolean> moveToAnotherProject(
+            @PathVariable Long taskId,
+            @RequestParam Long projectId
+    ) {
+        return new ApiResponse<>(service.moveToAnotherProject(taskId,projectId));
+    }
+
 }

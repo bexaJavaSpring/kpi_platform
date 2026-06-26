@@ -40,6 +40,7 @@ public class TaskService implements ITaskService {
     private final CacheManagerService cacheManagerService;
     private final CacheEvictEventListener cacheEvictEventListener;
     private  final FileService fileService;
+    private final ProjectRepository projectRepository;
 
 
     @Override
@@ -168,6 +169,19 @@ public class TaskService implements ITaskService {
 
         cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<TaskService>(CachePrefix.TASK));
         return copiedTask.getId();
+    }
+
+    @Override
+    @Transactional
+    public Boolean moveToAnotherProject(Long taskId, Long projectId) {
+        Task task = repository.findById(taskId).orElseThrow(() -> new CustomNotFoundException("task.not.found"));
+        if (Boolean.TRUE.equals(task.getDeleted())) throw new CustomNotFoundException("task.not.found");
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new CustomNotFoundException("project.not.found"));
+        if (Boolean.TRUE.equals(project.getDeleted())) throw new CustomNotFoundException("project.not.found");
+        task.setProject(project);
+        repository.save(task);
+        cacheEvictEventListener.handleCacheEvict(new GenericCacheEvictEvent<TaskService>(CachePrefix.TASK));
+        return true;
     }
 
     private TaskResponse toTaskResponse(Task task) {

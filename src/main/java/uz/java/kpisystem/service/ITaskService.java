@@ -20,4 +20,6 @@ public interface ITaskService {
     Boolean delete(Long id);
 
     Long copy(Long id);
+
+    Boolean moveToAnotherProject(Long taskId, Long projectId);
 }
