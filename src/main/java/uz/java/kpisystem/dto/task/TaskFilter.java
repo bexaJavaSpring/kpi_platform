@@ -1,10 +1,12 @@
 package uz.java.kpisystem.dto.task;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import uz.java.kpisystem.dto.BaseFilter;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 public class TaskFilter extends BaseFilter {
     private String name;
